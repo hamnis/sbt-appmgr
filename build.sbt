@@ -4,7 +4,7 @@ organization := "net.hamnaberg.sbt"
 
 sbtPlugin := true
 
-libraryDependencies += "org.apache.commons" % "commons-compress" % "1.7"
+libraryDependencies += "net.hamnaberg" %% "scala-archiver" % "0.1.0"
 
 scalacOptions := Seq("-deprecation")
 
