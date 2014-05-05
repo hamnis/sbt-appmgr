@@ -23,11 +23,11 @@ object Appsh extends Plugin {
     appshZipDirectory := target.value / "appsh",
     appshZipFile := target.value / "appsh.zip",
     appshPermissions := Map(
-      "bin/root/*" -> defaultBinPermissions ,
+      "root/bin/*" -> defaultBinPermissions ,
       "hooks/*" -> defaultBinPermissions
     ),
     appshBuild <<= (appshSource, appshZipDirectory, appshPermissions, appshZipFile, streams) map { (src, target, permissions, zip, stream) => 
-      IO.delete(zip)
+      if (zip.exists) IO.delete(zip)
 
       val mapping = FileMapping(List(src, target), permissions = permissions)
       validate(mapping.mappings)
