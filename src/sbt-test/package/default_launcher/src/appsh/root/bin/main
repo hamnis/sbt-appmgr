@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ -z $APP_HOME ]; then
+  DIR=$(dirname $0)
+  APP_HOME=$(cd $DIR/.. && pwd -P)
+fi
+
+
+exec java -cp $APP_HOME/lib/* app.App

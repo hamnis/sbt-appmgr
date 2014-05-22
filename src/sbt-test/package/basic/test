@@ -1,2 +1,4 @@
 > appsh-build
-$ exists target/appsh.zip
+$ exists target/appsh-build
+$ exists target/appsh-build/root
+$ exists target/appsh-build/root/bin/basic.sh
