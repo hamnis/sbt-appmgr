@@ -5,9 +5,15 @@ if [ -z $APP_HOME ]; then
   exit 1
 fi
 
-NAME=$(app conf get app.name)
-DESCRIPTION=$(app conf get app.description)
-PROGRAM=$(app conf get app.program)
+NAME=$(app conf get launcher.name)
+DESCRIPTION=$(app conf get launcher.description)
+PROGRAM=$(app conf get launcher.command)
+
+if [ -z $NAME]; then
+  echo "Missing NAME in config, defaulting to main"
+  NAME="main"
+fi
+
 case $PROGRAM in
   /*) ;;
   *) PROGRAM=${APP_HOME}/current/bin/${PROGRAM}
