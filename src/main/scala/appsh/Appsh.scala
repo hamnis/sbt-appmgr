@@ -79,7 +79,7 @@ object Appsh extends Plugin {
         p
       }.asScala.toMap
       val c = if (!configMap.contains("app.launcher")) configMap ++ l.asMap else configMap
-      c.map{case (k,v) => s"$k=$v"}.mkString("\n")
+      c.map{case (k,v) => s"$k=$v"}.mkString("", "\n", "\n")
     }
 
     val map = launcher match {
