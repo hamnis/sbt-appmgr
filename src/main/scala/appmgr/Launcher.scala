@@ -1,4 +1,4 @@
-package appsh
+package appmgr
 
 import java.net.URL
 import java.io.File

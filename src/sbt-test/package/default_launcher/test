@@ -1,7 +1,7 @@
-> appsh-build
-$ exists target/appsh-build
-$ exists target/appsh-build/root
-$ exists target/appsh-build/root/bin/launcher.sh
-$ exists target/appsh-build/root/bin/main
--$ exec target/appsh-build/root/bin/launcher.sh
-$ exec target/appsh-build/root/bin/main
+> appmgr-build
+$ exists target/appmgr-build
+$ exists target/appmgr-build/root
+$ exists target/appmgr-build/root/bin/launcher.sh
+$ exists target/appmgr-build/root/bin/main
+-$ exec ./target/appmgr-build/root/bin/launcher.sh
+> run

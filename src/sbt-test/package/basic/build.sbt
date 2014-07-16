@@ -1,7 +1,5 @@
-import AppshKeys._
-
 name := "basic"
 
-appshSettings
+appmgrSettings
 
-appshZipFile := target.value / "appsh-build"
+appmgrOutputFile in Appmgr := target.value / "appmgr-build"

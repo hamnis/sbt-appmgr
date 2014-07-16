@@ -1,4 +1,4 @@
-name := "sbt-appsh"
+name := "sbt-appmgr"
 
 organization := "net.hamnaberg.sbt"
 

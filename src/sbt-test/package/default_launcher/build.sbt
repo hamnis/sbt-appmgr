@@ -1,22 +1,13 @@
-import AppshKeys._
+import complete.DefaultParsers._
 
-name := "basic"
+name := "default_launcher"
 
-appshSettings
+appAssemblerSettings
 
-appshZipFile := target.value / "appsh-build"
+appOutput in App := target.value / "appmgr" / "root"
 
-val copyToLib = taskKey[Unit]("Copy to lib")
+appmgrSettings
 
-copyToLib <<= { (packageBin in Compile, dependencyClasspath in Compile, target) map { (bin, cp, dest) =>
-    val lib = dest / "appsh" / "root" / "lib"
-    IO.createDirectory(lib)
-    IO.copyFile(bin, lib / bin.getName)
-    cp.filter(a => sbt.classpath.ClasspathUtilities.isArchive(a.data)).foreach{ a => 
-      val f = a.data
-      IO.copyFile(f, lib / f.getName)
-    }
-  }
-}
+appmgrOutputFile in Appmgr := target.value / "appmgr-build"
 
-appshBuild <<= appshBuild.dependsOn(copyToLib)
+appmgrBuild <<= appmgrBuild.dependsOn(appAssemble)

@@ -1,62 +1,57 @@
-package appsh
+package appmgr
 
 import sbt._
 import Keys._
 import archiver.{FilePermissions, FileMapping, Archiver, Packaging}
 
 
-object Appsh extends Plugin {
+object Appmgr extends Plugin {
   val defaultBinPermissions = FilePermissions(Integer.decode("0755")).getOrElse(sys.error("Invalid permissions"))
+  val Appmgr = config("appmgr")
 
-  object AppshKeys {
-    val appshSource = SettingKey[File]("source for overriding defaults in project usually src/appsh")
-    val appshZipDirectory = SettingKey[File]("directory that will be zipped. Usually target/appsh")
-    val appshZipFile = SettingKey[File]("Zipfile. Usually target/appsh.zip")
-    val appshPermissions = SettingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
-    val appshBuild = TaskKey[File]("appsh-build", "Creates a app.sh zip file.")
-    val appshLauncher = SettingKey[Option[Launcher]]("""|Default Launcher: 
-      |can be loaded from classpath by adding a classpath:/path/to/launcher.
-      |or from file by using file:/path/to/file.
-      |The file can expect a few config parameters:
-      | - launcher.command - command to run
-      | - launcher.name - Name of the app
-      | - launcher.description - Short desciption of program
-      |
-      |The app.config file will be auto-generated if this is set.
-      |The auto-generated file will be merged any existing app.config file.
-      |
-      |The default implementation will expect a jvm program, 
-      |so we will register a JAVA_OPTS and a JVM_OPT environment variable.
-      |
-      |Config variables registered in the 'app.name' config group
-      |will be passed on as system properties.
-      |
-      |Example app.config:
-      | app.launcher=bin/launcher.sh
-      | launcher.command=main
-      | launcher.name=foo
-      | launcher.desciption=Foo program
-      | foo.server=example.com
-      |
-      """.stripMargin)
-  }
+  val appmgrOutputFile = SettingKey[File]("Zipfile. Default target/appmgr.zip")
+  val appmgrPermissions = SettingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
+  val appmgrBuild = TaskKey[File]("appmgr-build", "Create the appmgr distribution")
+  val appmgrLauncher = SettingKey[Option[Launcher]]("""|Default Launcher:
+    |can be loaded from classpath by adding a classpath:/path/to/launcher.
+    |or from file by using file:/path/to/file.
+    |The file can expect a few config parameters:
+    | - launcher.command - command to run
+    | - launcher.name - Name of the app
+    | - launcher.description - Short desciption of program
+    |
+    |The app.config file will be auto-generated if this is set.
+    |The auto-generated file will be merged any existing app.config file.
+    |
+    |The default implementation will expect a jvm program,
+    |so we will register a JAVA_OPTS and a JVM_OPT environment variable.
+    |
+    |Config variables registered in the 'app.name' config group
+    |will be passed on as system properties.
+    |
+    |Example app.config:
+    | app.launcher=bin/launcher.sh
+    | launcher.command=main
+    | launcher.name=foo
+    | launcher.desciption=Foo program
+    | foo.server=example.com
+    |
+    """.stripMargin)
 
-  import AppshKeys._
-
-  lazy val appshSettings: Seq[Setting[_]] = Seq(
-    appshSource := baseDirectory.value / "src" / "appsh",
-    appshZipDirectory := target.value / "appsh",
-    appshZipFile := target.value / "appsh.zip",
-    appshPermissions := Map(
+  val appmgrSettings: Seq[Setting[_]] = inConfig(Appmgr)(Seq(
+    sourceDirectory := baseDirectory.value / "src" / "appmgr",
+    managedDirectory := target.value / "appmgr",
+    appmgrOutputFile := target.value / "appmgr.zip",
+    appmgrPermissions := Map(
       "root/bin/*" -> defaultBinPermissions ,
       "hooks/*" -> defaultBinPermissions
     ),
-    appshLauncher <<= (name, description).apply{ (n, d) =>
+    appmgrLauncher <<= (name, description).apply{ (n, d) =>
       Some(Launcher(Resource.DefaultLauncher, "main", n, d))
     },
-    appshBuild <<= (appshSource, appshZipDirectory, appshLauncher, appshPermissions, appshZipFile, streams) map { (src, target, launcher, permissions, zip, stream) => 
+    appmgrBuild <<= (sourceDirectory, managedDirectory, appmgrLauncher, appmgrPermissions, appmgrOutputFile, streams) map { (src, target, launcher, permissions, zip, stream) =>
       if (zip.exists) IO.delete(zip)
-      IO.withTemporaryDirectory{ temp => 
+      IO.withTemporaryDirectory{ temp =>
         val mapping = FileMapping(List(target, src), permissions = permissions)
         val launcherM = handleLauncher(launcher, mapping, temp)
         val real = mapping.append(launcherM)
@@ -64,7 +59,10 @@ object Appsh extends Plugin {
         val archiver = Archiver(Packaging(zip))
         archiver.create(real, zip)
       }
-    }
+    },
+    Keys.`package` <<= appmgrBuild
+  )) ++ Seq(
+    appmgrBuild <<= appmgrBuild in Appmgr
   )
 
   def handleLauncher(launcher: Option[Launcher], mapping: FileMapping, directory: File): FileMapping = {
