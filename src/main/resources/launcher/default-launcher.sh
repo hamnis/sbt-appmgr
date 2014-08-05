@@ -40,4 +40,5 @@ if [ -f $APP_HOME/environment ]; then
   source $APP_HOME/environment
 fi
 
+export APP_HOME=${APP_HOME}/current
 exec ${PROGRAM} 2>&1
