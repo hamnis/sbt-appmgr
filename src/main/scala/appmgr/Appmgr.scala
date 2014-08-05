@@ -57,7 +57,9 @@ object Appmgr extends Plugin {
         val real = mapping.append(launcherM)
         validate(mapping)
         val archiver = Archiver(Packaging(zip))
-        archiver.create(real, zip)
+        val file = archiver.create(real, zip)
+        stream.log.info("Created appmgr app in: " + file)
+        file
       }
     },
     Keys.`package` <<= appmgrBuild
