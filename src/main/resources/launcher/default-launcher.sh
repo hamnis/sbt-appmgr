@@ -35,5 +35,9 @@ done
 
 export JAVA_OPTS
 export JVM_OPT=$JAVA_OPTS
-export APP_HOME=${APP_HOME}/current
+
+if [ -f $APP_HOME/environment ]; then
+  source $APP_HOME/environment
+fi
+
 exec ${PROGRAM} 2>&1
