@@ -5,6 +5,7 @@ Packages a distribution as an appmgr [app](https://trygvis.io/projects/appmgr/ap
 
 This is what an application zip archive looks like:
 
+```
 /app.config
 /root
 /root/bin
@@ -12,3 +13,4 @@ This is what an application zip archive looks like:
 /root/lib/
 /hooks/
 /hooks/post-install
+```
