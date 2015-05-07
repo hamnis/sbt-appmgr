@@ -2,12 +2,8 @@ import complete.DefaultParsers._
 
 name := "default_launcher"
 
-appAssemblerSettings
+target in App := (target in Compile).value / "appmgr" / "root"
 
-appOutput in App := target.value / "appmgr" / "root"
+target in Appmgr := (target in Compile).value / "appmgr-build"
 
-appmgrSettings
-
-appmgrOutputFile in Appmgr := target.value / "appmgr-build"
-
-appmgrBuild <<= appmgrBuild.dependsOn(appAssemble)
+packageBin in Appmgr <<= (packageBin in Appmgr).dependsOn(packageBin in App)

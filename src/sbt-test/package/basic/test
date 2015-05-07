@@ -1,4 +1,4 @@
-> appmgr-build
+> appmgr:package
 $ exists target/appmgr-build
 $ exists target/appmgr-build/root
 $ exists target/appmgr-build/root/bin/basic.sh

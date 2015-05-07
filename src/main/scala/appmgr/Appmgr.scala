@@ -5,43 +5,63 @@ import Keys._
 import archiver.{FilePermissions, FileMapping, Archiver, Packaging}
 
 
-object Appmgr extends Plugin {
+object AppmgrPlugin extends AutoPlugin {
   val defaultBinPermissions = FilePermissions(Integer.decode("0755")).getOrElse(sys.error("Invalid permissions"))
-  val Appmgr = config("appmgr")
 
-  val appmgrOutputFile = SettingKey[File]("Zipfile. Default target/appmgr.zip")
-  val appmgrPermissions = SettingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
-  val appmgrBuild = TaskKey[File]("appmgr-build", "Create the appmgr distribution")
-  val appmgrLauncher = SettingKey[Option[Launcher]]("""|Default Launcher:
-    |can be loaded from classpath by adding a classpath:/path/to/launcher.
-    |or from file by using file:/path/to/file.
-    |The file can expect a few config parameters:
-    | - launcher.command - command to run
-    | - launcher.name - Name of the app
-    | - launcher.description - Short desciption of program
-    |
-    |The app.config file will be auto-generated if this is set.
-    |The auto-generated file will be merged any existing app.config file.
-    |
-    |The default implementation will expect a jvm program,
-    |so we will register a JAVA_OPTS and a JVM_OPT environment variable.
-    |
-    |Config variables registered in the 'app.name' config group
-    |will be passed on as system properties.
-    |
-    |Example app.config:
-    | app.launcher=bin/launcher.sh
-    | launcher.command=main
-    | launcher.name=foo
-    | launcher.desciption=Foo program
-    | foo.server=example.com
-    |
-    """.stripMargin)
+  override def trigger = allRequirements
 
-  val appmgrSettings: Seq[Setting[_]] = inConfig(Appmgr)(Seq(
+  override def requires = plugins.CorePlugin
+
+  object autoImport {
+
+    val Appmgr = config("appmgr")
+
+    val appmgrPermissions = SettingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
+    val appmgrLauncher = SettingKey[Option[Launcher]]("""|Default Launcher:
+      |can be loaded from classpath by adding a classpath:/path/to/launcher.
+      |or from file by using file:/path/to/file.
+      |The file can expect a few config parameters:
+      | - launcher.command - command to run
+      | - launcher.name - Name of the app
+      | - launcher.description - Short desciption of program
+      |
+      |The app.config file will be auto-generated if this is set.
+      |The auto-generated file will be merged any existing app.config file.
+      |
+      |The default implementation will expect a jvm program,
+      |so we will register a JAVA_OPTS and a JVM_OPT environment variable.
+      |
+      |Config variables registered in the 'app.name' config group
+      |will be passed on as system properties.
+      |
+      |Example app.config:
+      | app.launcher=bin/launcher.sh
+      | launcher.command=main
+      | launcher.name=foo
+      | launcher.desciption=Foo program
+      | foo.server=example.com
+      |
+      """.stripMargin)
+
+    def overrideLauncherCommand(cmd: String) = {
+      appmgrLauncher in Appmgr := (appmgrLauncher in Appmgr).value.map(_.copy(command = cmd))
+    }
+
+    def overrideLauncherKey(_name: String) = {
+      appmgrLauncher in Appmgr := (appmgrLauncher in Appmgr).value.map(_.copy(name = _name))
+    }
+
+    def appmgrAttach(classifier: String = "appmgr") = attach(packageBin in Appmgr, classifier, "zip")
+  }
+
+
+  
+  import autoImport._
+
+  override def projectSettings = inConfig(Appmgr)(Seq(
     sourceDirectory := baseDirectory.value / "src" / "appmgr",
-    managedDirectory := target.value / "appmgr",
-    appmgrOutputFile := target.value / "appmgr.zip",
+    managedDirectory := (target in Compile).value / "appmgr",
+    target := (target in Compile).value / "appmgr.zip",
     appmgrPermissions := Map(
       "root/bin/*" -> defaultBinPermissions ,
       "hooks/*" -> defaultBinPermissions
@@ -49,10 +69,10 @@ object Appmgr extends Plugin {
     appmgrLauncher <<= (name, description).apply{ (n, d) =>
       Some(Launcher(Resource.DefaultLauncher, "main", n, d))
     },
-    appmgrBuild <<= (sourceDirectory, managedDirectory, appmgrLauncher, appmgrPermissions, appmgrOutputFile, streams) map { (src, target, launcher, permissions, zip, stream) =>
+    packageBin <<= (sourceDirectory, managedDirectory, appmgrLauncher, appmgrPermissions, target, streams) map { (src, managedDir, launcher, permissions, zip, stream) =>
       if (zip.exists) IO.delete(zip)
       IO.withTemporaryDirectory{ temp =>
-        val mapping = FileMapping(List(target, src), permissions = permissions)
+        val mapping = FileMapping(List(managedDir, src), permissions = permissions)
         val launcherM = handleLauncher(launcher, mapping, temp)
         val real = mapping.append(launcherM)
         validate(mapping)
@@ -62,10 +82,16 @@ object Appmgr extends Plugin {
         file
       }
     },
-    Keys.`package` <<= appmgrBuild
-  )) ++ Seq(
-    appmgrBuild <<= appmgrBuild in Appmgr
-  )
+    Keys.`package` <<= packageBin
+  ))
+
+  def attach(task: TaskKey[File], classifier: String, extension: String = "jar"): Seq[Setting[_]] = {
+    Seq(
+      artifact in (Compile, task) := {
+      val art = (artifact in (Compile, task)).value
+      art.copy(classifier = Some(classifier), `type` = extension, extension = extension)
+    }) ++ addArtifact(artifact in (Compile, task), task)
+  }
 
   def handleLauncher(launcher: Option[Launcher], mapping: FileMapping, directory: File): FileMapping = {
     import collection.JavaConverters._

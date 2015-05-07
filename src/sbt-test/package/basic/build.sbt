@@ -1,5 +1,3 @@
 name := "basic"
 
-appmgrSettings
-
-appmgrOutputFile in Appmgr := target.value / "appmgr-build"
+target in Appmgr := target.value / "appmgr-build"
