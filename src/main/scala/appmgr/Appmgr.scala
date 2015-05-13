@@ -51,7 +51,7 @@ object AppmgrPlugin extends AutoPlugin {
       appmgrLauncher in Appmgr := (appmgrLauncher in Appmgr).value.map(_.copy(name = _name))
     }
 
-    def appmgrAttach(classifier: String = "appmgr") = attach(packageBin in Appmgr, classifier, "zip")
+    def appmgrAttach(classifier: String = "appmgr") = attach(packageBin in Appmgr, Appmgr, classifier, "zip")
   }
 
 
@@ -85,12 +85,12 @@ object AppmgrPlugin extends AutoPlugin {
     Keys.`package` <<= packageBin
   ))
 
-  def attach(task: TaskKey[File], classifier: String, extension: String = "jar"): Seq[Setting[_]] = {
+  def attach(task: TaskKey[File], conf: Configuration, classifier: String, extension: String = "jar"): Seq[Setting[_]] = {
     Seq(
       artifact in (Compile, task) := {
       val art = (artifact in (Compile, task)).value
       art.copy(classifier = Some(classifier), `type` = extension, extension = extension)
-    }) ++ addArtifact(artifact in (Compile, task), task)
+    }) ++ addArtifact(artifact in (conf, task), task)
   }
 
   def handleLauncher(launcher: Option[Launcher], mapping: FileMapping, directory: File): FileMapping = {
