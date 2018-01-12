@@ -1,5 +1,5 @@
-libraryDependencies <+= sbtVersion("org.scala-sbt" % "scripted-plugin" % _)
+libraryDependencies += "org.scala-sbt" %% "scripted-plugin" % sbtVersion.value
 
-addSbtPlugin("no.arktekk.sbt" % "aether-deploy" % "0.14")
+addSbtPlugin("no.arktekk.sbt" % "aether-deploy" % "0.21")
 
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")

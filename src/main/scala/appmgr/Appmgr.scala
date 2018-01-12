@@ -1,6 +1,7 @@
 package appmgr
 
 import sbt._
+import sbt.io.Using
 import Keys._
 import archiver.{FilePermissions, FileMapping, Archiver, Packaging}
 
@@ -16,8 +17,8 @@ object AppmgrPlugin extends AutoPlugin {
 
     val Appmgr = config("appmgr")
 
-    val appmgrPermissions = SettingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
-    val appmgrLauncher = SettingKey[Option[Launcher]]("""|Default Launcher:
+    val appmgrPermissions = Def.settingKey[Map[String, FilePermissions]]("Map from path to unix permissions")
+    val appmgrLauncher = Def.settingKey[Option[Launcher]]("""|Default Launcher:
       |can be loaded from classpath by adding a classpath:/path/to/launcher.
       |or from file by using file:/path/to/file.
       |The file can expect a few config parameters:
@@ -66,14 +67,16 @@ object AppmgrPlugin extends AutoPlugin {
       "root/bin/*" -> defaultBinPermissions ,
       "hooks/*" -> defaultBinPermissions
     ),
-    appmgrLauncher <<= (name, description).apply{ (n, d) =>
-      Some(Launcher(Resource.DefaultLauncher, "main", n, d))
+    appmgrLauncher := {
+      Some(Launcher(Resource.DefaultLauncher, "main", name.value, description.value))
     },
-    packageBin <<= (sourceDirectory, managedDirectory, appmgrLauncher, appmgrPermissions, target, streams) map { (src, managedDir, launcher, permissions, zip, stream) =>
+    packageBin := {
+      val zip = target.value
+      val stream = streams.value
       if (zip.exists) IO.delete(zip)
       IO.withTemporaryDirectory{ temp =>
-        val mapping = FileMapping(List(managedDir, src), permissions = permissions)
-        val launcherM = handleLauncher(launcher, mapping, temp)
+        val mapping = FileMapping(List(managedDirectory.value, sourceDirectory.value), permissions = appmgrPermissions.value)
+        val launcherM = handleLauncher(appmgrLauncher.value, mapping, temp)
         val real = mapping.append(launcherM)
         validate(mapping)
         val archiver = Archiver(Packaging(zip))
@@ -82,14 +85,14 @@ object AppmgrPlugin extends AutoPlugin {
         file
       }
     },
-    Keys.`package` <<= packageBin
+    Keys.`package` := packageBin.value
   ))
 
   def attach(task: TaskKey[File], conf: Configuration, classifier: String, extension: String = "jar"): Seq[Setting[_]] = {
     Seq(
       artifact in (Compile, task) := {
       val art = (artifact in (Compile, task)).value
-      art.copy(classifier = Some(classifier), `type` = extension, extension = extension)
+      art.withClassifier(Some(classifier)).withType(extension).withExtension(extension)
     }) ++ addArtifact(artifact in (conf, task), task)
   }
 
@@ -111,7 +114,10 @@ object AppmgrPlugin extends AutoPlugin {
     val map = launcher match {
       case Some(l) => {
         val target = directory / "launcher.sh"
-        IO.download(l.launcher.asURL, target)
+        Using.urlInputStream(l.launcher.asURL) { inputStream =>
+          IO.transfer(inputStream, target)
+        }
+
         val configFile = directory / "app.config"       
         IO.write(configFile, config(l))
         val m = Map(
@@ -152,5 +158,3 @@ object AppmgrPlugin extends AutoPlugin {
     }
   }
 }
-
-

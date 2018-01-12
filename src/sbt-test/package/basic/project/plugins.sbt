@@ -1,1 +1,7 @@
-addSbtPlugin("net.hamnaberg.sbt" % "sbt-appmgr" % "0.5.0-SNAPSHOT")
+val pluginVersion = scala.util.Properties.propOrNone("plugin.version").getOrElse(
+throw new RuntimeException("""
+  |The system property 'plugin.version' is not defined.
+  |Specify this property using the scriptedLaunchOpts -D.
+""".stripMargin))
+
+addSbtPlugin("net.hamnaberg.sbt" % "sbt-appmgr" % pluginVersion)
